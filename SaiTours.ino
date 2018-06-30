@@ -2,10 +2,11 @@
 #include "def.h"
 unsigned char Buf[12];
 unsigned long Time;
+
 float  Vitesse;
-int Entree;
+boolean Entree;
 unsigned int Kilometre = 0;
-boolean Passage = true, Bas = false;
+boolean Passage = true;
 PCF8566 lcd(0x3e);
 
 void setup() {
@@ -13,21 +14,22 @@ void setup() {
   Wire.begin();
   lcd.init();
   pinMode(Entree, INPUT);
+  attachInterrupt(0, Tours, CHANGE);
+}
+void Tours(void) {
+  Entree = !Entree;
+  Kilometre++;
 }
 
-
 void loop() {
-  Entree = analogRead(A0);
-  if (Entree == 1) {
-    if (Passage) {
-      Temps();
-    } else {
-      Delta();
-    }
-    Passage = !Passage;
-    Kilometre ++;
+  while (!Entree) {
+//Debug("While", " Entree", Entree);
+delay(500);
   }
-  //  if(Time != 0)Serial.println((millis() - Time)/1000,DEC);
+  Temps();
+  Delta();
+  Entree = !Entree;
+  Affiche(String(Vitesse) + "00" + String(Kilometre));
 }
 
 
@@ -40,23 +42,18 @@ void Temps() {
 void Delta(void) {
   unsigned long delta = millis() - Time;
   Debug("Delta", "Delta", Time);
-  if (!(delta <= 17)) {
-    Vitesse = (2074 / delta) * 3.6;
-    Debug("Vitesse", "V", Vitesse);
+  Vitesse = (2074 / delta) * 3.6;
+  Debug("Vitesse", "V", Vitesse);
 
-    Affiche(String(Vitesse) + "00" + String(Kilometre));
-  } else {
-    Passage = !Passage;
-  }
 }
 
 void Buff(unsigned char Autre[12]) {
   for (int i = 0; i < sizeof(Buf); i++) {
-    //  Serial.print(Buf[i],HEX);
-    //  Serial.print(" AP ");
+//    Serial.print(Buf[i], HEX);
+//    Serial.print(" AP ");
     Buf[i] = Buf[i] | Autre[i];
-    //     Serial.print(Buf[i],HEX);
-    //     Serial.println("");
+//    Serial.print(Buf[i], HEX);
+//    Serial.println("");
   }
 }
 
@@ -65,23 +62,24 @@ void Affiche(String Ch) {
   String _Ch = Ch;
   if (Ch.length() > 6) {
     Ch = "";
-    for (int i = 0; i <= 2; i++) {
+    for (int i = 0; i <= 6; i++) {
       Ch += _Ch.charAt(i);
     }
   }
-//  for (int i = 0; i < Ch.length(); i++) {
-//    if ( !(Ch.charAt(i) <= '0' && Ch.charAt(i) >= '9')) {
-//      _Ch;
-//    }
-//  }
-  
+  //    for (int i = 0; i < Ch.length(); i++) {
+  //    if ( !(Ch.charAt(i) <= '0' && Ch.charAt(i) >= '9')) {
+  //      _Ch;
+  //    }
+  //  }
+
   if (_Ch != "") {
-    for (int i = 0; i < Ch.length(); i++) {
-      int Chiffre = Ch.charAt(i) - '0';
+    for (int i = 0; i <=4; i++) {
+      char Chiffre = Ch.charAt(i) - '0';
       //    Serial.print("Chiffre : ");
       //    Serial.println(Chiffre);
       Buff(N[Chiffre][i]);
     }
+    
   } else {
     for (int i = 0; i < sizeof(Buf); i++) {
       Buf[i] = Erreur[i];
@@ -89,6 +87,9 @@ void Affiche(String Ch) {
   }
   lcd.setMemory(Buf);
 }
+void VitKilo(String CH){
+   
+  }
 
 void VideBuff() {
   //  Serial.println("###-VideBuff");
